@@ -4,7 +4,7 @@ import asyncio
 import os
 
 st.set_page_config(
-    page_title="EGSA Afaan Oromoo AI Audio",
+    page_title="EGSA Afaan Oromoo Voice",
     page_icon="🎙️"
 )
 
@@ -15,68 +15,34 @@ text = st.text_area(
     value="""
 Baga nagaan gara Dhaabbata Economic Growth Solution Association EGSA dhuftan.
 
-Mee waa'ee EGSA, kaayyoo isaa fi hojii isaa waliin haa barannu.
+Tokkummaan keenya humna keenya.
 """
 )
 
-
-async def get_oromo_voice():
-
-    voices = await edge_tts.list_voices()
-
-    # Search Oromo voice
-    for voice in voices:
-        if voice["Locale"] == "om-ET":
-            return voice["ShortName"]
-
-    # fallback female voice
-    return "en-US-JennyNeural"
+# Use stable female voice
+VOICE = "en-US-JennyNeural"
 
 
-
-async def generate():
-
-    voice = await get_oromo_voice()
+async def generate_audio():
 
     communicate = edge_tts.Communicate(
         text=text,
-        voice=voice
+        voice=VOICE
     )
 
-    await communicate.save(
-        "EGSA_audio.mp3"
-    )
-
-    return voice
-
+    await communicate.save("EGSA_audio.mp3")
 
 
 if st.button("Generate 🎧"):
 
     try:
+        asyncio.run(generate_audio())
 
-        voice_used = asyncio.run(generate())
+        st.success("Audio generated successfully!")
 
-        st.success(
-            f"Generated using: {voice_used}"
-        )
-
-        if os.path.exists("EGSA_audio.mp3"):
-
-            with open(
-                "EGSA_audio.mp3",
-                "rb"
-            ) as f:
-
-                st.audio(
-                    f.read(),
-                    format="audio/mp3"
-                )
+        with open("EGSA_audio.mp3", "rb") as f:
+            st.audio(f.read(), format="audio/mp3")
 
     except Exception as e:
-
-        st.error(
-            "Audio generation failed"
-        )
-
+        st.error("Error generating audio")
         st.write(e)
