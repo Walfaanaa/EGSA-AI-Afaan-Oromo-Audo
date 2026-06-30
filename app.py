@@ -1,18 +1,18 @@
 import streamlit as st
-import asyncio
 import edge_tts
+import asyncio
+import os
 
 st.set_page_config(
-    page_title="EGSA Afaan Oromoo AI Voice",
+    page_title="EGSA Afaan Oromoo AI Audio",
     page_icon="🎙️"
 )
 
 st.title("🎙️ EGSA Afaan Oromoo AI Voice Generator")
 
-
 text = st.text_area(
-    "Afaan Oromoo barreessi:",
-    """
+    "Barreeffama Afaan Oromoo galchi:",
+    value="""
 Baga nagaan gara Dhaabbata Economic Growth Solution Association EGSA dhuftan.
 
 Mee waa'ee EGSA, kaayyoo isaa fi hojii isaa waliin haa barannu.
@@ -20,32 +20,27 @@ Mee waa'ee EGSA, kaayyoo isaa fi hojii isaa waliin haa barannu.
 )
 
 
-async def get_voices():
+async def get_oromo_voice():
+
     voices = await edge_tts.list_voices()
 
-    # Oromo voices
-    oromo = [
-        v["ShortName"]
-        for v in voices
-        if "om" in v["ShortName"].lower()
-    ]
+    # Search Oromo voice
+    for voice in voices:
+        if voice["Locale"] == "om-ET":
+            return voice["ShortName"]
 
-    return oromo
+    # fallback female voice
+    return "en-US-JennyNeural"
 
 
-async def create_audio():
 
-    voices = await get_voices()
+async def generate():
 
-    if len(voices) == 0:
-        voice = "en-US-JennyNeural"
-    else:
-        voice = voices[0]
-
+    voice = await get_oromo_voice()
 
     communicate = edge_tts.Communicate(
-        text,
-        voice
+        text=text,
+        voice=voice
     )
 
     await communicate.save(
@@ -56,29 +51,32 @@ async def create_audio():
 
 
 
-if st.button("Generate Audio 🎧"):
+if st.button("Generate 🎧"):
 
     try:
 
-        voice_used = asyncio.run(create_audio())
+        voice_used = asyncio.run(generate())
 
         st.success(
-            f"Audio created using {voice_used}"
+            f"Generated using: {voice_used}"
         )
 
-        with open(
-            "EGSA_audio.mp3",
-            "rb"
-        ) as audio:
+        if os.path.exists("EGSA_audio.mp3"):
 
-            st.audio(
-                audio.read(),
-                format="audio/mp3"
-            )
+            with open(
+                "EGSA_audio.mp3",
+                "rb"
+            ) as f:
 
+                st.audio(
+                    f.read(),
+                    format="audio/mp3"
+                )
 
     except Exception as e:
 
         st.error(
-            f"Voice generation failed: {e}"
+            "Audio generation failed"
         )
+
+        st.write(e)
